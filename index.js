@@ -60,7 +60,7 @@ const verifyToken = async (req, res, next) => {
           if (err) {
             // console.log(err);
           }
-          return res.status(401).send({ message: "Unauthorized" });
+          return res.status(401).send({ message: "Unauthorized access" });
           // if token is valid then it would be decoded
           console.log("value in the token", decoded);
           // set
@@ -69,12 +69,6 @@ const verifyToken = async (req, res, next) => {
         });
       };
     }
-    return res.status(401).send({ message: "Unauthorized" });
-    // if token is valid then it would be decoded
-    console.log("value in the token", decoded);
-    // set
-    req.user = decoded;
-    next();
   });
 };
 
@@ -90,7 +84,7 @@ async function run() {
     // Auth Related API
     app.post("/jwt", logger, async (req, res) => {
       const user = req.body;
-      console.log(user);
+      console.log("user for token", user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "1h",
       });
@@ -102,6 +96,13 @@ async function run() {
           sameSite: "none",
         })
         .send({ success: true });
+    });
+
+    // After log Out remove cookie
+    app.post("/logOut", async (req, res) => {
+      const user = req.body;
+      console.log("log in out", user);
+      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
     });
 
     // Services related APi
