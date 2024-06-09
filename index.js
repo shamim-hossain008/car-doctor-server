@@ -42,34 +42,23 @@ const logger = async (req, res, next) => {
 
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token;
-  console.log("value of token in middleware", token);
+  // console.log("value of token in middleware", token);
+  // no token available
   if (!token) {
     return res.status(401).send({ message: "Not authorized" });
   }
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-    // error
     if (err) {
-      const verifyToken = async (req, res, next) => {
-        const token = req.cookies?.token;
-        console.log("value of token in middleware", token);
-        if (!token) {
-          return res.status(401).send({ message: "Not authorized" });
-        }
-        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-          // error
-          if (err) {
-            // console.log(err);
-          }
-          return res.status(401).send({ message: "Unauthorized access" });
-          // if token is valid then it would be decoded
-          console.log("value in the token", decoded);
-          // set
-          req.user = decoded;
-          next();
-        });
-      };
+      return res.status(401).send({ message: "unauthorized access" });
     }
+    req.user = decoded;
+    next();
   });
+};
+const cookeOption = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production" ? true : false,
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
 };
 
 async function run() {
@@ -82,27 +71,40 @@ async function run() {
     const bookingCollection = client.db("carDoctor").collection("bookings");
 
     // Auth Related API
+
+    // creating token
     app.post("/jwt", logger, async (req, res) => {
       const user = req.body;
       console.log("user for token", user);
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "1h",
-      });
+      const token = jwt.sign(
+        user,
+        process.env.ACCESS_TOKEN_SECRET
+        //    {
+        //   expiresIn: "1h",
+        // }
+      );
 
       res
-        .cookie("token", token, {
-          httpOnly: true,
-          secure: false, //http://localhost:5173
-          sameSite: "none",
-        })
+        .cookie(
+          "token",
+          token,
+          cookeOption
+          //  {
+          //   httpOnly: true,
+          //   secure: false, //http://localhost:5173
+          //   sameSite: "none",
+          // }
+        )
         .send({ success: true });
     });
 
-    // After log Out remove cookie
+    // After log Out remove Token
     app.post("/logOut", async (req, res) => {
       const user = req.body;
       console.log("log in out", user);
-      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+      res
+        .clearCookie("token", { ...cookeOption, maxAge: 0 })
+        .send({ success: true });
     });
 
     // Services related APi
@@ -179,7 +181,7 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
