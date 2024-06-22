@@ -109,6 +109,20 @@ async function run() {
 
     // Services related APi
     app.get("/services", logger, async (req, res) => {
+      //  for get data for toggle price
+      const filter = req.query;
+      console.log(filter);
+      const query = {
+        // price: { $gte: 50 },
+        // price: { $lt: 150, $gt:50 },
+        // for search
+        title: { $regex: filter.search, $option: "i" },
+      };
+      const options = {
+        sort: {
+          price: filter.sort === "asc" ? 1 : -1,
+        },
+      };
       const cursor = serviceCollection.find();
       const result = await cursor.toArray();
       res.send(result);
